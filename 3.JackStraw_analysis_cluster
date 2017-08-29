@@ -1,0 +1,34 @@
+### JackStraw analyis on cluster ##
+
+## load twelfth_file on cluster
+## open R on cluster
+# Genes placed into 20 bins based on X-axis (average expression). Y-axis is within-bin z-score of log(Variance/mean).
+# Running this sets object@var.genes by default
+twelfth_file = MeanVarPlot(twelfth_file,y.cutoff = 2,x.low.cutoff = 2,fxn.x = expMean,fxn.y = logVarDivMean)
+
+# Run a PCA using all genes as input (to change the input gene set, use the pc.genes argument)
+twelfth_file = PCA(twelfth_file,pc.genes=rownames(twelfth_file@data))
+
+# run small JackStraw analysis
+twelfth_file = JackStraw(twelfth_file, num.replicate = 5, do.print = T)
+
+# extract JackStraw plot and define the number of significant PCs
+JackStrawPlot(twelfth_file,PCs = 1:15)
+
+#Calculate PCA with 200 genes per PCA and attach PCA to dataset
+twelfth_file=ProjectPCA(twelfth_file,do.print=TRUE)
+
+# Choose significant genes for PC1-30, allow each PC to contribute a max of 200 genes (to avoid one PC swamping the analysis)
+twelfth_file_siggenes = PCASigGenes(twelfth_file, 1:30, pval.cut = 1e-5, max.per.pc = 250)
+length(twelfth_file_siggenes)
+
+# Now redo the PCA analysis with the new gene list
+twelfth_file=PCA(twelfth_file, pc.genes=twelfth_file_siggenes, do.print = TRUE)
+
+# Do 200 random samplings to find significant genes, each time randomly permute 1% of genes
+# This returns a 'p-value' for each gene in each PC, based on how likely the gene/PC score woud have been observed by chance
+# Note that in this case we get the same result with 200 or 1000 samplings, so we do 200 here for expediency
+thirteenth_file = JackStraw(twelfth_file, num.replicate = 200, do.print = T)
+
+## save file and proceed on personal computer
+save(thirteenth_file, file="...")
