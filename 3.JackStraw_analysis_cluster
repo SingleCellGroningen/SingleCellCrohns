@@ -2,9 +2,11 @@
 
 ## load twelfth_file on cluster
 ## open R on cluster
+library(Seurat)
+library(devtools)
 # Genes placed into 20 bins based on X-axis (average expression). Y-axis is within-bin z-score of log(Variance/mean).
 # Running this sets object@var.genes by default
-twelfth_file = MeanVarPlot(twelfth_file,y.cutoff = 2,x.low.cutoff = 2,fxn.x = expMean,fxn.y = logVarDivMean)
+twelfth_file = MeanVarPlot(tenth_file,y.cutoff = 2,x.low.cutoff = 2,fxn.x = expMean,fxn.y = logVarDivMean)
 
 # Run a PCA using all genes as input (to change the input gene set, use the pc.genes argument)
 twelfth_file = PCA(twelfth_file,pc.genes=rownames(twelfth_file@data))
@@ -31,4 +33,4 @@ twelfth_file=PCA(twelfth_file, pc.genes=twelfth_file_siggenes, do.print = TRUE)
 thirteenth_file = JackStraw(twelfth_file, num.replicate = 200, do.print = T)
 
 ## save file and proceed on personal computer
-save(thirteenth_file, file="...")
+save(thirteenth_file, file="mucosacells_CD8neg_postjack.Robj")

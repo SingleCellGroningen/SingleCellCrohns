@@ -1,0 +1,50 @@
+## blood vs mucosa differential expression analysis using SCDE on cluster
+
+## load data
+data<-read.csv("allpts_rawdata.csv", header=TRUE, row.names=1, check.names=FALSE)
+metadata<-read.csv("metadata_mucosa_cd4.csv", header=TRUE, row.names=1)
+
+library("methods")
+library(devtools)
+library(ggplot2)
+library(Matrix) # Sparse matrices
+library(dplyr) # Dataframe manipulation
+
+library(flexmix)
+library(scde) # Differential Expression
+
+## change datafile so that it contains only the filtered cells from metadatafile 'metadata'
+dim(metadata)
+dim(data)
+xx=row.names(metadata)
+data2<-data[,xx]
+dim(data2)
+dim(metadata)
+
+## filter raw data for cells<200 genes (expressed = >1 count) and genes<3 cells
+data2 <- clean.counts(data2, min.lib.size=200, min.reads = 1, min.detected = 3)
+
+## make celltype file which will be used to define which cell belongs to which tissue category, using metadata2 file and converting IEL and LPL to MUCOSA
+celltype = as.factor(metadata$NKT_cells)
+## giving each value in the factor celltype the name of the corresponding cell
+names(celltype) <- colnames(data2)
+
+# calculate error models
+err.mod <- scde.error.models(counts = data2, groups = celltype, n.cores = 15,
+           threshold.segmentation = TRUE, save.crossfit.plots = FALSE,
+           save.model.plots = FALSE, verbose = 1)
+
+
+# estimate gene expression prior
+gene.ex.prior <- scde.expression.prior(models = err.mod, counts = data2, length.out = 400,
+                                       show.plot = F)
+
+## Testing for differential expression
+ediff <- scde.expression.difference(err.mod, data2, gene.ex.prior, groups = celltype,
+                    n.randomizations = 100, n.cores = 15, verbose = 1)
+
+# write out a table with all the results, showing most significantly different genes
+write.table(ediff[order(abs(ediff$Z), decreasing = TRUE), ], file = "DE_mucosa_CD4_NKTcells_vs_rest.txt", row.names = TRUE, col.names = TRUE, sep = "\t", quote = FALSE)
+##
+
+
